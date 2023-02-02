@@ -12,6 +12,11 @@
 
 import { V220DevfileComponents } from '@devfile/api';
 
+export interface IDevShare {
+  beSharedUser: string;
+  attrs?: any;
+}
+
 export interface IPatch {
   op: string;
   path: string;

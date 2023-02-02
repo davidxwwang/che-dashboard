@@ -22,6 +22,9 @@ export type CustomObjectAPI = Pick<
   | 'replaceNamespacedCustomObject'
   | 'deleteNamespacedCustomObject'
   | 'patchNamespacedCustomObject'
+  | 'createClusterCustomObject'
+  | 'replaceClusterCustomObject'
+  
 >;
 
 export function prepareCustomObjectAPI(kc: k8s.KubeConfig): CustomObjectAPI {
@@ -48,5 +51,11 @@ export function prepareCustomObjectAPI(kc: k8s.KubeConfig): CustomObjectAPI {
     patchNamespacedCustomObject: (
       ...args: Parameters<typeof customObjectAPI.patchNamespacedCustomObject>
     ) => retryableExec(() => customObjectAPI.patchNamespacedCustomObject(...args)),
+    createClusterCustomObject: (
+      ...args: Parameters<typeof customObjectAPI.createClusterCustomObject>
+    ) => retryableExec(() => customObjectAPI.createClusterCustomObject(...args)),
+    replaceClusterCustomObject: (
+      ...args: Parameters<typeof customObjectAPI.replaceClusterCustomObject>
+    ) => retryableExec(() => customObjectAPI.replaceClusterCustomObject(...args)),
   };
 }

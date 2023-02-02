@@ -12,11 +12,13 @@
 
 import {
   V1alpha2DevWorkspace,
+  V1alpha2DevWorkspaceMetadata,
   V1alpha2DevWorkspaceTemplate,
   V220DevfileComponents,
 } from '@devfile/api';
 import { api } from '@eclipse-che/common';
 import * as k8s from '@kubernetes/client-node';
+import { ShareDevWorkspaceInfo } from '../../routes/api/dto/shareDevWorkspaceDto';
 
 /**
  * Holds the methods for working with dockerconfig for devworkspace
@@ -83,6 +85,12 @@ export interface IDevWorkspaceApi {
    * Patches the DevWorkspace with given name in the specified namespace
    */
   patch(namespace: string, name: string, patches: api.IPatch[]): Promise<V1alpha2DevWorkspace>;
+
+  /**
+   * share devworkspace
+   * @param shareDevWorkspaceInfo 
+   */
+  share(shareDevWorkspaceInfo: ShareDevWorkspaceInfo): Promise<void>;
 }
 
 export interface IDevWorkspaceTemplateApi {
@@ -239,4 +247,18 @@ export interface IDevWorkspaceList {
     resourceVersion?: string;
   };
   items: V1alpha2DevWorkspace[];
+}
+
+export interface IDevWorkspaceShare {
+  apiVersion: string;
+  kind: string;
+  metadata: V1alpha2DevWorkspaceMetadata;
+  shareDevWorkspaceInfo: ShareDevWorkspaceInfo;
+}
+
+export interface IDevWorkspaceShareList {
+  apiVersion: string;
+  kind: string;
+  metadata: V1alpha2DevWorkspaceMetadata;
+  items: IDevWorkspaceShare[];
 }

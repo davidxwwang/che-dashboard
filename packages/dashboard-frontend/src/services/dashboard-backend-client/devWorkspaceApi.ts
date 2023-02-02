@@ -89,8 +89,11 @@ export async function shareWorkspace(
   beSharedUsers: Set<string>
 ): Promise<void> {
   try {
-    const v = { 'beSharedUsers': Array.from(beSharedUsers) }
-    await axios.post(`${prefix}/namespace/${namespace}/devworkspaces/${workspaceName}/share`, { "beSharedUsers": Array.from(beSharedUsers) });
+    const _beSharedUsers = Array.from(beSharedUsers).map((user)=> {
+      return {beSharedUser: user}
+    }) as api.IDevShare[]
+  //  const v = { 'beSharedUsers': Array.from(beSharedUsers) }
+    await axios.post(`${prefix}/namespace/${namespace}/devworkspaces/${workspaceName}/share`, _beSharedUsers);
   } catch (e) {
     throw `Failed to share workspace '${workspaceName}'. ${helpers.errors.getMessage(e)}`;
   }

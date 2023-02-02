@@ -11,7 +11,7 @@
  */
 
 import * as k8s from '@kubernetes/client-node';
-import { IDevWorkspaceList, IDevWorkspaceApi, IDevWorkspaceCallbacks } from '../types';
+import { IDevWorkspaceList, IDevWorkspaceApi, IDevWorkspaceCallbacks, IDevWorkspaceShare, IDevWorkspaceShareList } from '../types';
 import {
   devworkspaceGroup,
   devworkspaceLatestVersion,
@@ -24,6 +24,8 @@ import { createError } from './helpers/createError';
 import { isLocalRun } from '../../localRun';
 import { CustomObjectAPI, prepareCustomObjectAPI } from './helpers/prepareCustomObjectAPI';
 import { prepareCustomObjectWatch } from './helpers/prepareCustomObjectWatch';
+import { ShareDevWorkspaceInfo } from '../../routes/api/dto/shareDevWorkspaceDto';
+import { shareDevWorkspaceInfoFullVersion, shareDevWorkspaceInfoGroup, shareDevWorkspaceInfoKind, shareDevWorkspaceInfoPlural, shareDevWorkspaceInfoVersion } from '../../constants/share-devworkspace-config';
 
 const DEV_WORKSPACE_API_ERROR_LABEL = 'CUSTOM_OBJECTS_API_ERROR';
 
@@ -34,6 +36,67 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
   constructor(kc: k8s.KubeConfig) {
     this.customObjectAPI = prepareCustomObjectAPI(kc);
     this.customObjectWatch = prepareCustomObjectWatch(kc);
+  }
+
+  /**
+   * save the devWorkSpace share info：who share which devWorkspace to who（is a clusterd cr）
+   * @param shareDevWorkspaceInfo 
+   */
+  async upsertShareDevWorkSpaceInfo(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
+    const listResp = await this.customObjectAPI.listClusterCustomObject(
+      shareDevWorkspaceInfoGroup,
+      shareDevWorkspaceInfoVersion,
+      shareDevWorkspaceInfoPlural,
+    );
+    const loginUserShareInfo = this.getloginUserShareDevWsInfo((listResp.body as IDevWorkspaceShareList).items, shareDevWorkspaceInfo);
+    const shareDevWorkspaceDto = this.constructShareDevWorkspace(shareDevWorkspaceInfo, loginUserShareInfo)
+    const userNotShareAny = loginUserShareInfo == undefined
+    if(userNotShareAny){
+      await this.customObjectAPI.createClusterCustomObject(
+        shareDevWorkspaceInfoGroup,
+        shareDevWorkspaceInfoVersion,
+        shareDevWorkspaceInfoPlural,
+        shareDevWorkspaceDto,
+      );
+    }else{
+      if(loginUserShareInfo.metadata?.name){
+        const y = await this.customObjectAPI.replaceClusterCustomObject(
+          shareDevWorkspaceInfoGroup,
+          shareDevWorkspaceInfoVersion,
+          shareDevWorkspaceInfoPlural,
+          loginUserShareInfo.metadata?.name,
+          shareDevWorkspaceDto
+        );
+        console.log('%c [ await ]-73', 'font-size:13px; background:pink; color:#bf2c9f;', y)
+      }        
+    }
+  }
+
+  /**
+   * should update rolebinding in the sharer namespace then other people can see the shared DevWorkspace
+   * @param shareDevWorkspaceInfo 
+   */
+  async updataRoleBinding(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
+
+  } 
+
+  async share(shareDevWorkspaceInfo: ShareDevWorkspaceInfo): Promise<void> {
+    
+    try {
+      // 1 create or update shareDevWorkspaceInfoConfig
+      this.upsertShareDevWorkSpaceInfo(shareDevWorkspaceInfo);
+      // 2 update rolebinding in user namespaace
+      this.updataRoleBinding(shareDevWorkspaceInfo)
+
+    } catch (e) {
+      throw createError(
+        e,
+        DEV_WORKSPACE_API_ERROR_LABEL,
+        ``,
+      );
+    }
+    // 2 create or update rolebinding
+    throw new Error('Method not implemented.');
   }
 
   async listInNamespace(namespace: string): Promise<IDevWorkspaceList> {
@@ -229,5 +292,28 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
         callbacks.onError(`Error: ${message}`);
       },
     );
+  }
+
+  /**
+   * 用户和namespace是一对一关系
+   * @param devShareList 
+   * @param shareDevWorkspaceInfo 
+   * @returns 如果是undefine就说明此用户没有分享过workspace
+   */
+  getloginUserShareDevWsInfo(devShareList: IDevWorkspaceShare[], shareDevWorkspaceInfo: ShareDevWorkspaceInfo): IDevWorkspaceShare | undefined{
+    const loginUserShareInfo = devShareList.filter((item) => {return shareDevWorkspaceInfo.sharer === item.shareDevWorkspaceInfo.sharer});
+    return loginUserShareInfo.length > 0 ? loginUserShareInfo[0] : undefined;
+  }
+
+  constructShareDevWorkspace(shareDevWorkspaceInfo: ShareDevWorkspaceInfo, currentShareInfo: IDevWorkspaceShare | undefined): IDevWorkspaceShare{
+    const shareName = shareDevWorkspaceInfo.sharer + '-share';
+    const isCreateShare = currentShareInfo === undefined;
+    const shareDevMetadata = isCreateShare ? { name: shareName } : { name: shareName, resourceVersion: currentShareInfo.metadata.resourceVersion }
+    const shareDevWorkspace = { apiVersion: shareDevWorkspaceInfoFullVersion, 
+                                metadata: shareDevMetadata, 
+                                kind: shareDevWorkspaceInfoKind, 
+                                shareDevWorkspaceInfo
+                              } as IDevWorkspaceShare;
+    return shareDevWorkspace;
   }
 }

@@ -23,6 +23,8 @@ import { getToken } from './helpers/getToken';
 import { restParams } from '../../typings/models';
 import { getSchema } from '../../services/helpers';
 import { api } from '@eclipse-che/common';
+import { getUserName } from '../../helpers/getUserName';
+import { BesharedInfo, ShareDevWorkspaceInfo } from './dto/shareDevWorkspaceDto';
 
 const tags = ['Devworkspace'];
 
@@ -62,12 +64,16 @@ export function registerDevworkspacesRoutes(server: FastifyInstance) {
     getSchema({ tags, params: namespacedWorkspaceSchema}),
     async function (request: FastifyRequest) {
       const { namespace, workspaceName } = request.params as restParams.INamespacedWorkspaceParams;
-      const beSharedUsers = request.body;
-      console.log('%c [ beSharedUsers ]-66', 'font-size:13px; background:pink; color:#bf2c9f;', beSharedUsers)
-      console.log('david！ share workspace backend！' + namespace + workspaceName + JSON.stringify(beSharedUsers))
+      const beSharedUsers = request.body as api.IDevShare[];
       const token = getToken(request);
+      const logininUser = getUserName(token);
+
+      const _shared: Array<BesharedInfo> = beSharedUsers.map((user)=>{
+        return {sharedToUserName: user.beSharedUser}
+      })
+      const shareDevWorkspaceInfo: ShareDevWorkspaceInfo = new ShareDevWorkspaceInfo(logininUser, workspaceName, namespace, _shared)
       const { devworkspaceApi } = getDevWorkspaceClient(token);
-      return null;
+      return devworkspaceApi.share(shareDevWorkspaceInfo);
     },
   );
 

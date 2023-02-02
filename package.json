@@ -36,5 +36,8 @@
   },
   "devDependencies": {
     "lerna": "^5.0.0"
+  },
+  "dependencies": {
+    "typedjson": "^1.8.0"
   }
 }

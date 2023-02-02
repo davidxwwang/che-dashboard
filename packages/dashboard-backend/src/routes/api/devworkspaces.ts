@@ -57,6 +57,20 @@ export function registerDevworkspacesRoutes(server: FastifyInstance) {
     },
   );
 
+  server.post(
+    `${baseApiPath}/namespace/:namespace/devworkspaces/:workspaceName/share`,
+    getSchema({ tags, params: namespacedWorkspaceSchema}),
+    async function (request: FastifyRequest) {
+      const { namespace, workspaceName } = request.params as restParams.INamespacedWorkspaceParams;
+      const beSharedUsers = request.body;
+      console.log('%c [ beSharedUsers ]-66', 'font-size:13px; background:pink; color:#bf2c9f;', beSharedUsers)
+      console.log('david！ share workspace backend！' + namespace + workspaceName + JSON.stringify(beSharedUsers))
+      const token = getToken(request);
+      const { devworkspaceApi } = getDevWorkspaceClient(token);
+      return null;
+    },
+  );
+
   server.get(
     `${baseApiPath}/namespace/:namespace/devworkspaces/:workspaceName`,
     getSchema({ tags, params: namespacedWorkspaceSchema }),

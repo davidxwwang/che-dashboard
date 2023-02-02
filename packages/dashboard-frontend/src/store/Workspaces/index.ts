@@ -105,6 +105,7 @@ export type ActionCreators = {
   ) => AppThunk<KnownAction, Promise<void>>;
   restartWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
   stopWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
+  shareWorkspace: (workspace: Workspace, beSharedUsers: Set<string>) => AppThunk<KnownAction, Promise<void>>;
   deleteWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
   updateWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
   createWorkspaceFromDevfile: (
@@ -203,6 +204,19 @@ export const actionCreators: ActionCreators = {
     async (dispatch): Promise<void> => {
       try {
         await dispatch(DevWorkspacesStore.actionCreators.stopWorkspace(workspace.ref));
+      } catch (e) {
+        dispatch({ type: 'RECEIVE_ERROR' });
+        throw e;
+      }
+    },
+  
+  shareWorkspace:
+    (workspace: Workspace, beSharedUsers: Set<string>): AppThunk<KnownAction, Promise<void>> =>
+    async (dispatch): Promise<void> => {
+      try {
+        await dispatch(
+          DevWorkspacesStore.actionCreators.shareWorkspace(workspace.ref, beSharedUsers)
+        );
       } catch (e) {
         dispatch({ type: 'RECEIVE_ERROR' });
         throw e;

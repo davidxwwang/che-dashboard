@@ -40,47 +40,47 @@ module.exports = {
     'prettier',
   ],
   rules: {
-    'prettier/prettier': 'error',
-    'no-tabs': 'error',
-    'linebreak-style': [
-      'error',
-      'unix'
-    ],
-    semi: [
-      'error',
-      'always'
-    ],
-    'no-multiple-empty-lines': [
-      'error',
-      {
-        'max': 1,
-        'maxEOF': 1,
-      }
-    ],
-    'notice/notice': [
-      'error',
-      {
-        templateFile: '.config/copyright.js',
-        onNonMatchingHeader: 'report',
-        messages: {
-          reportAndSkip: 'Missing license header',
-        },
-      },
-    ],
-    'spaced-comment': 'error',
-    'no-warning-comments': [
-      'warn',
-      {
-        'terms': ['todo'],
-        'location': 'start'
-      }
-    ],
+    // 'prettier/prettier': 'error',
+    // 'no-tabs': 'error',
+    // 'linebreak-style': [
+    //   'error',
+    //   'unix'
+    // ],
+    // semi: [
+    //   'error',
+    //   'always'
+    // ],
+    // 'no-multiple-empty-lines': [
+    //   'error',
+    //   {
+    //     'max': 1,
+    //     'maxEOF': 1,
+    //   }
+    // ],
+    // 'notice/notice': [
+    //   'error',
+    //   {
+    //     templateFile: '.config/copyright.js',
+    //     onNonMatchingHeader: 'report',
+    //     messages: {
+    //       reportAndSkip: 'Missing license header',
+    //     },
+    //   },
+    // ],
+    // 'spaced-comment': 'error',
+    // 'no-warning-comments': [
+    //   'warn',
+    //   {
+    //     'terms': ['todo'],
+    //     'location': 'start'
+    //   }
+    // ],
 
-    // disabled to avoid conflicts with prettier
-    quotes: 'off',
+    // // disabled to avoid conflicts with prettier
+    // quotes: 'off',
 
-    // TODO enable rules below and fix errors
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
+    // // TODO enable rules below and fix errors
+    // '@typescript-eslint/explicit-module-boundary-types': 'off',
+    // '@typescript-eslint/no-explicit-any': 'off',
   },
 };

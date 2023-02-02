@@ -83,6 +83,19 @@ export async function deleteWorkspace(namespace: string, workspaceName: string):
   }
 }
 
+export async function shareWorkspace(
+  namespace: string, 
+  workspaceName: string, 
+  beSharedUsers: Set<string>
+): Promise<void> {
+  try {
+    const v = { 'beSharedUsers': Array.from(beSharedUsers) }
+    await axios.post(`${prefix}/namespace/${namespace}/devworkspaces/${workspaceName}/share`, { "beSharedUsers": Array.from(beSharedUsers) });
+  } catch (e) {
+    throw `Failed to share workspace '${workspaceName}'. ${helpers.errors.getMessage(e)}`;
+  }
+}
+
 export async function getDockerConfig(namespace: string): Promise<api.IDockerConfig> {
   try {
     const response = await axios.get(`${prefix}/namespace/${namespace}/dockerconfig`);

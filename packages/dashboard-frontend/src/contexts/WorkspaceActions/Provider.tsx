@@ -138,6 +138,13 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
           }
         }
         break;
+      case WorkspaceAction.SHARE_WORKSPACE: 
+        {
+          console.warn(`Workspace share!`);
+          // 可以分享给多人
+          await this.props.shareWorkspace(workspace, new Set(['user2']));
+        }
+        break;  
       case WorkspaceAction.STOP_WORKSPACE:
         {
           await this.props.stopWorkspace(workspace);

@@ -147,6 +147,10 @@ export type ActionCreators = {
   ) => AppThunk<KnownAction, Promise<void>>;
   restartWorkspace: (workspace: devfileApi.DevWorkspace) => AppThunk<KnownAction, Promise<void>>;
   stopWorkspace: (workspace: devfileApi.DevWorkspace) => AppThunk<KnownAction, Promise<void>>;
+  shareWorkspace: (
+    workspace: devfileApi.DevWorkspace, 
+    beSharedUsers: Set<string>
+  ) => AppThunk<KnownAction, Promise<void>>;
   terminateWorkspace: (workspace: devfileApi.DevWorkspace) => AppThunk<KnownAction, Promise<void>>;
   updateWorkspaceAnnotation: (
     workspace: devfileApi.DevWorkspace,
@@ -434,6 +438,29 @@ export const actionCreators: ActionCreators = {
       }
 
       return defer.promise;
+    },
+  
+  shareWorkspace:
+  (workspace: devfileApi.DevWorkspace, beSharedUsers: Set<string>): AppThunk<KnownAction, Promise<void>> =>
+    async (dispatch): Promise<void> => {
+      try {
+        const namespace = workspace.metadata.namespace;
+        const name = workspace.metadata.name;
+        await devWorkspaceClient.shareWorkspace(namespace, name, beSharedUsers);
+        dispatch({
+          type: 'DELETE_DEVWORKSPACE_LOGS',
+          workspaceUID: WorkspaceAdapter.getUID(workspace),
+        });
+      } catch (e) {
+        const errorMessage =
+          `Failed to stop the workspace ${workspace.metadata.name}, reason: ` +
+          common.helpers.errors.getMessage(e);
+        dispatch({
+          type: 'RECEIVE_DEVWORKSPACE_ERROR',
+          error: errorMessage,
+        });
+        throw errorMessage;
+      }
     },
 
   stopWorkspace:

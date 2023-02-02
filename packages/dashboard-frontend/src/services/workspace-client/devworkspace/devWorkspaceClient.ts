@@ -746,6 +746,10 @@ export class DevWorkspaceClient extends WorkspaceClient {
     await DwApi.deleteWorkspace(namespace, name);
   }
 
+  async shareWorkspace(namespace: string, name: string, beSharedUsers: Set<string>): Promise<void> {
+    await DwApi.shareWorkspace(namespace, name, beSharedUsers);
+  }
+  
   getDebugMode(workspace: devfileApi.DevWorkspace): boolean {
     return workspace.metadata.annotations?.[DEVWORKSPACE_DEBUG_START_ANNOTATION] === 'true';
   }

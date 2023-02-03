@@ -36,7 +36,12 @@ export function registerDevworkspacesRoutes(server: FastifyInstance) {
       const { namespace } = request.params as restParams.INamespacedParams;
       const token = getToken(request);
       const { devworkspaceApi } = getDevWorkspaceClient(token);
-      return await devworkspaceApi.listInNamespace(namespace);
+      // todo david
+      const selfCreateDevWorkspaces = await devworkspaceApi.listInNamespace(namespace);
+      const sharedDevWorkspaces = await devworkspaceApi.listSharedDevWorkspaces()
+      selfCreateDevWorkspaces.items = selfCreateDevWorkspaces.items.concat(sharedDevWorkspaces)
+      
+      return selfCreateDevWorkspaces;
     },
   );
 

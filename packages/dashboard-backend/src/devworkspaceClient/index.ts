@@ -16,6 +16,7 @@ import { DevWorkspaceTemplateApiService } from './services/devWorkspaceTemplateA
 import { DockerConfigApiService } from './services/dockerConfigApi';
 import { KubeConfigApiService } from './services/kubeConfigApi';
 import { NamespaceApiService } from './services/namespaceApi';
+import { RbacAuthorizationService } from './services/rbacAuthorizationApi';
 import { ServerConfigApiService } from './services/serverConfigApi';
 import { UserProfileApiService } from './services/userProfileApi';
 import {
@@ -25,6 +26,7 @@ import {
   IDockerConfigApi,
   IKubeConfigApi,
   INamespaceApi,
+  IRBACAuthApi,
   IServerConfigApi,
   IUserProfileApi,
 } from './types';
@@ -38,6 +40,10 @@ export class DevWorkspaceClient implements IDevWorkspaceClient {
     this.kubeConfig = kc;
   }
 
+  get rbacAuthorizationApi() : IRBACAuthApi{
+    return new RbacAuthorizationService(this.kubeConfig);
+  }
+  
   get devWorkspaceTemplateApi(): IDevWorkspaceTemplateApi {
     return new DevWorkspaceTemplateApiService(this.kubeConfig);
   }

@@ -21,6 +21,20 @@ import * as k8s from '@kubernetes/client-node';
 import { ShareDevWorkspaceInfo } from '../../routes/api/dto/shareDevWorkspaceDto';
 
 /**
+ * get /update rolebinding
+ */
+export interface IRBACAuthApi {
+  /**
+   * Returns rolebinding
+   */
+  getRoleBindingByName(roleBindName: string, namespace: string): Promise<any>;
+
+  updateRoleBindingByName(shareDevWorkspaceInfo : ShareDevWorkspaceInfo): Promise<any>;
+
+//  addRoleBindingByName(token : string, updateObj : ShareDevWorkspaceInfo): Promise<any>;
+
+}
+/**
  * Holds the methods for working with dockerconfig for devworkspace
  * which is stored in Kubernetes Secret and is annotated in DevWorkspace operator specific way.
  */
@@ -91,6 +105,8 @@ export interface IDevWorkspaceApi {
    * @param shareDevWorkspaceInfo 
    */
   share(shareDevWorkspaceInfo: ShareDevWorkspaceInfo): Promise<void>;
+
+  listSharedDevWorkspaces(): Promise<Array<V1alpha2DevWorkspace>>;
 }
 
 export interface IDevWorkspaceTemplateApi {

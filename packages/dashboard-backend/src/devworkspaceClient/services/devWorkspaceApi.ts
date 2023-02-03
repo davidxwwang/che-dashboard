@@ -26,6 +26,8 @@ import { CustomObjectAPI, prepareCustomObjectAPI } from './helpers/prepareCustom
 import { prepareCustomObjectWatch } from './helpers/prepareCustomObjectWatch';
 import { ShareDevWorkspaceInfo } from '../../routes/api/dto/shareDevWorkspaceDto';
 import { shareDevWorkspaceInfoFullVersion, shareDevWorkspaceInfoGroup, shareDevWorkspaceInfoKind, shareDevWorkspaceInfoPlural, shareDevWorkspaceInfoVersion } from '../../constants/share-devworkspace-config';
+import { getDevWorkspaceClient } from '../../routes/api/helpers/getDevWorkspaceClient';
+import { getUserName } from '../../helpers/getUserName';
 
 const DEV_WORKSPACE_API_ERROR_LABEL = 'CUSTOM_OBJECTS_API_ERROR';
 
@@ -38,47 +40,43 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
     this.customObjectWatch = prepareCustomObjectWatch(kc);
   }
 
-  /**
-   * save the devWorkSpace share info：who share which devWorkspace to who（is a clusterd cr）
-   * @param shareDevWorkspaceInfo 
-   */
-  async upsertShareDevWorkSpaceInfo(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
-    const listResp = await this.customObjectAPI.listClusterCustomObject(
-      shareDevWorkspaceInfoGroup,
-      shareDevWorkspaceInfoVersion,
-      shareDevWorkspaceInfoPlural,
-    );
-    const loginUserShareInfo = this.getloginUserShareDevWsInfo((listResp.body as IDevWorkspaceShareList).items, shareDevWorkspaceInfo);
-    const shareDevWorkspaceDto = this.constructShareDevWorkspace(shareDevWorkspaceInfo, loginUserShareInfo)
-    const userNotShareAny = loginUserShareInfo == undefined
-    if(userNotShareAny){
-      await this.customObjectAPI.createClusterCustomObject(
-        shareDevWorkspaceInfoGroup,
-        shareDevWorkspaceInfoVersion,
-        shareDevWorkspaceInfoPlural,
-        shareDevWorkspaceDto,
-      );
-    }else{
-      if(loginUserShareInfo.metadata?.name){
-        const y = await this.customObjectAPI.replaceClusterCustomObject(
-          shareDevWorkspaceInfoGroup,
-          shareDevWorkspaceInfoVersion,
-          shareDevWorkspaceInfoPlural,
-          loginUserShareInfo.metadata?.name,
-          shareDevWorkspaceDto
-        );
-        console.log('%c [ await ]-73', 'font-size:13px; background:pink; color:#bf2c9f;', y)
-      }        
+  async listSharedDevWorkspaces(): Promise<Array<V1alpha2DevWorkspace>> {
+    const clusterAccessToken = process.env.CLUSTER_ACCESS_TOKEN as string;
+    const loginUserName = getUserName(clusterAccessToken)
+    const shareDevWsList = await this.listShareDevWorkspaceInfo()
+    // shareDevWsList.filter((eachShareItem) => {
+    //   for(const eachBeSharedUser of eachShareItem.shareDevWorkspaceInfo.shared){
+    //     if(eachBeSharedUser.sharedToUserName === loginUserName){
+    //       // 此时说明有分享给他的了
+    //       const shareDevWsUser = eachShareItem.shareDevWorkspaceInfo.sharer;
+    //       const shareDevWorkspaceName = eachShareItem.shareDevWorkspaceInfo.devWorkspace;
+    //       const shareDevWsNameSpace = eachShareItem.shareDevWorkspaceInfo.namespace;
+
+    //       // todo 有可能此时devworkspace被删除了
+    //       const devWorkspace = await this.getByName(shareDevWsNameSpace, shareDevWorkspaceName)
+    //       beSharedDevWs.push(devWorkspace)
+    //     }
+    //   }
+    // })
+
+
+    const beSharedDevWs = new Array<V1alpha2DevWorkspace>();
+    for(const eachShareItem of shareDevWsList){
+      for(const eachBeSharedUser of eachShareItem.shareDevWorkspaceInfo.shared){
+        if(eachBeSharedUser.sharedToUserName === loginUserName){
+          // 此时说明有分享给他的了
+          const shareDevWsUser = eachShareItem.shareDevWorkspaceInfo.sharer;
+          const shareDevWorkspaceName = eachShareItem.shareDevWorkspaceInfo.devWorkspace;
+          const shareDevWsNameSpace = eachShareItem.shareDevWorkspaceInfo.namespace;
+
+          // todo 有可能此时devworkspace被删除了
+          const devWorkspace = await this.getByName(shareDevWsNameSpace, shareDevWorkspaceName)
+          beSharedDevWs.push(devWorkspace)
+        }
+      }
     }
+    return beSharedDevWs;
   }
-
-  /**
-   * should update rolebinding in the sharer namespace then other people can see the shared DevWorkspace
-   * @param shareDevWorkspaceInfo 
-   */
-  async updataRoleBinding(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
-
-  } 
 
   async share(shareDevWorkspaceInfo: ShareDevWorkspaceInfo): Promise<void> {
     
@@ -95,8 +93,6 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
         ``,
       );
     }
-    // 2 create or update rolebinding
-    throw new Error('Method not implemented.');
   }
 
   async listInNamespace(namespace: string): Promise<IDevWorkspaceList> {
@@ -293,6 +289,57 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
       },
     );
   }
+
+  async listShareDevWorkspaceInfo() {
+    const listResp = await this.customObjectAPI.listClusterCustomObject(
+      shareDevWorkspaceInfoGroup,
+      shareDevWorkspaceInfoVersion,
+      shareDevWorkspaceInfoPlural,
+    );
+    return (listResp.body as IDevWorkspaceShareList).items;  
+  }
+
+   /**
+   * save the devWorkSpace share info：who share which devWorkspace to who（is a clusterd cr）
+   * @param shareDevWorkspaceInfo 
+   */
+   async upsertShareDevWorkSpaceInfo(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
+    const listResp = await this.listShareDevWorkspaceInfo()
+    const loginUserShareInfo = this.getloginUserShareDevWsInfo(listResp, shareDevWorkspaceInfo);
+    const shareDevWorkspaceDto = this.constructShareDevWorkspace(shareDevWorkspaceInfo, loginUserShareInfo)
+    const userNotShareAny = loginUserShareInfo == undefined
+    if(userNotShareAny){
+      await this.customObjectAPI.createClusterCustomObject(
+        shareDevWorkspaceInfoGroup,
+        shareDevWorkspaceInfoVersion,
+        shareDevWorkspaceInfoPlural,
+        shareDevWorkspaceDto,
+      );
+    }else{
+      if(loginUserShareInfo.metadata?.name){
+        const y = await this.customObjectAPI.replaceClusterCustomObject(
+          shareDevWorkspaceInfoGroup,
+          shareDevWorkspaceInfoVersion,
+          shareDevWorkspaceInfoPlural,
+          loginUserShareInfo.metadata?.name,
+          shareDevWorkspaceDto
+        );
+        console.log('%c [ await ]-73', 'font-size:13px; background:pink; color:#bf2c9f;', y)
+      }        
+    }
+  }
+
+  /**
+   * should update rolebinding in the sharer namespace then other people can see the shared DevWorkspace
+   * @param shareDevWorkspaceInfo 
+   */
+  async updataRoleBinding(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
+    if(shareDevWorkspaceInfo.shared){
+      const clusterAccessToken = process.env.CLUSTER_ACCESS_TOKEN as string;
+      const { rbacAuthorizationApi } = getDevWorkspaceClient(clusterAccessToken);
+      rbacAuthorizationApi.updateRoleBindingByName(shareDevWorkspaceInfo)
+    }
+  } 
 
   /**
    * 用户和namespace是一对一关系

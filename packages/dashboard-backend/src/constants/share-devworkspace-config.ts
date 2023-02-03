@@ -22,7 +22,7 @@ export const shareDevWorkspaceInfoKind = 'devworkspaceshare';
 
 
 /**
- * rolebind
+ * rolebinding
  */
 export const cheworkspacesRolebinding = 'eclipse-che-cheworkspaces-clusterrole'; 
 export const cheAndDevworkspacesRolebinding = 'eclipse-che-cheworkspaces-devworkspace-clusterrole'; 

@@ -44,35 +44,20 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
     const clusterAccessToken = process.env.CLUSTER_ACCESS_TOKEN as string;
     const loginUserName = getUserName(clusterAccessToken)
     const shareDevWsList = await this.listShareDevWorkspaceInfo()
-    // shareDevWsList.filter((eachShareItem) => {
-    //   for(const eachBeSharedUser of eachShareItem.shareDevWorkspaceInfo.shared){
-    //     if(eachBeSharedUser.sharedToUserName === loginUserName){
-    //       // 此时说明有分享给他的了
-    //       const shareDevWsUser = eachShareItem.shareDevWorkspaceInfo.sharer;
-    //       const shareDevWorkspaceName = eachShareItem.shareDevWorkspaceInfo.devWorkspace;
-    //       const shareDevWsNameSpace = eachShareItem.shareDevWorkspaceInfo.namespace;
-
-    //       // todo 有可能此时devworkspace被删除了
-    //       const devWorkspace = await this.getByName(shareDevWsNameSpace, shareDevWorkspaceName)
-    //       beSharedDevWs.push(devWorkspace)
-    //     }
-    //   }
-    // })
-
-
     const beSharedDevWs = new Array<V1alpha2DevWorkspace>();
     for(const eachShareItem of shareDevWsList){
-      for(const eachBeSharedUser of eachShareItem.shareDevWorkspaceInfo.shared){
-        if(eachBeSharedUser.sharedToUserName === loginUserName){
-          // 此时说明有分享给他的了
-          const shareDevWsUser = eachShareItem.shareDevWorkspaceInfo.sharer;
-          const shareDevWorkspaceName = eachShareItem.shareDevWorkspaceInfo.devWorkspace;
-          const shareDevWsNameSpace = eachShareItem.shareDevWorkspaceInfo.namespace;
+      const beSharedUsers = eachShareItem.shareDevWorkspaceInfo.shared;
+      const beSharedItem =  beSharedUsers.find((eachBeSharedUser) => {return eachBeSharedUser.sharedToUserName === loginUserName;});
+      const isLoginUserBeShared = beSharedItem != undefined
+      if(isLoginUserBeShared){
+        // 此时说明有分享给他的了
+        const shareDevWsUser = eachShareItem.shareDevWorkspaceInfo.sharer;
+        const shareDevWorkspaceName = eachShareItem.shareDevWorkspaceInfo.devWorkspace;
+        const shareDevWsNameSpace = eachShareItem.shareDevWorkspaceInfo.namespace;
 
-          // todo 有可能此时devworkspace被删除了
-          const devWorkspace = await this.getByName(shareDevWsNameSpace, shareDevWorkspaceName)
-          beSharedDevWs.push(devWorkspace)
-        }
+        // todo 有可能此时devworkspace被删除了
+        const devWorkspace = await this.getByName(shareDevWsNameSpace, shareDevWorkspaceName)
+        beSharedDevWs.push(devWorkspace)
       }
     }
     return beSharedDevWs;

@@ -26,3 +26,12 @@ export const shareDevWorkspaceInfoKind = 'devworkspaceshare';
  */
 export const cheworkspacesRolebinding = 'eclipse-che-cheworkspaces-clusterrole'; 
 export const cheAndDevworkspacesRolebinding = 'eclipse-che-cheworkspaces-devworkspace-clusterrole'; 
+
+
+/**
+ * user 
+ */
+export const userStoreNamespace = 'dex';
+export const userGroup = 'dex.coreos.com';
+export const userVersion = 'v1'; 
+export const userPlural = 'passwords';

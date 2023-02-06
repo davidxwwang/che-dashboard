@@ -43,3 +43,16 @@ roleRef:
   kind: ClusterRole
   name: devworkspace-share-role
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: user-reader-rolebind
+subjects:
+- kind: Group
+  name: system:authenticated # Name is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: dex
+  apiGroup: rbac.authorization.k8s.io

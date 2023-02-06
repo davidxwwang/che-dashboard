@@ -25,7 +25,7 @@ import { isLocalRun } from '../../localRun';
 import { CustomObjectAPI, prepareCustomObjectAPI } from './helpers/prepareCustomObjectAPI';
 import { prepareCustomObjectWatch } from './helpers/prepareCustomObjectWatch';
 import { ShareDevWorkspaceInfo } from '../../routes/api/dto/shareDevWorkspaceDto';
-import { shareDevWorkspaceInfoFullVersion, shareDevWorkspaceInfoGroup, shareDevWorkspaceInfoKind, shareDevWorkspaceInfoPlural, shareDevWorkspaceInfoVersion } from '../../constants/share-devworkspace-config';
+import { shareDevWorkspaceInfoFullVersion, shareDevWorkspaceInfoGroup, shareDevWorkspaceInfoKind, shareDevWorkspaceInfoPlural, shareDevWorkspaceInfoVersion, userGroup, userPlural, userStoreNamespace, userVersion } from '../../constants/share-devworkspace-config';
 import { getDevWorkspaceClient } from '../../routes/api/helpers/getDevWorkspaceClient';
 import { getUserName } from '../../helpers/getUserName';
 
@@ -276,6 +276,13 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
   }
 
   async listShareDevWorkspaceInfo() {
+
+    const xx = await this.customObjectAPI.listNamespacedCustomObject(
+      userGroup,
+      userVersion,
+      userStoreNamespace,
+      userPlural,
+    )
     const listResp = await this.customObjectAPI.listClusterCustomObject(
       shareDevWorkspaceInfoGroup,
       shareDevWorkspaceInfoVersion,

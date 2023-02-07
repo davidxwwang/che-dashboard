@@ -17,6 +17,18 @@ export interface IDevShare {
   attrs?: any;
 }
 
+export interface IDevShare {
+  beSharedUser: string;
+  attrs?: any;
+}
+
+export interface User {
+  userID: string;
+  username: string;
+  email: string;
+  shared?: boolean;
+}
+
 export interface IPatch {
   op: string;
   path: string;

@@ -92,8 +92,19 @@ export async function shareWorkspace(
     const _beSharedUsers = Array.from(beSharedUsers).map((user)=> {
       return {beSharedUser: user}
     }) as api.IDevShare[]
-  //  const v = { 'beSharedUsers': Array.from(beSharedUsers) }
     await axios.post(`${prefix}/namespace/${namespace}/devworkspaces/${workspaceName}/share`, _beSharedUsers);
+  } catch (e) {
+    throw `Failed to share workspace '${workspaceName}'. ${helpers.errors.getMessage(e)}`;
+  }
+}
+
+export async function listShareWorkspaceCandidates(
+  namespace: string, 
+  workspaceName: string
+): Promise<Array<api.User>> {
+  try {
+    const response = await axios.get(`${prefix}/devworkspaces/${workspaceName}/share/usercandidates`);
+    return response.data
   } catch (e) {
     throw `Failed to share workspace '${workspaceName}'. ${helpers.errors.getMessage(e)}`;
   }

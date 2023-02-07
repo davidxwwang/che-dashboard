@@ -83,6 +83,18 @@ export function registerDevworkspacesRoutes(server: FastifyInstance) {
   );
 
   server.get(
+    `${baseApiPath}/devworkspaces/:workspaceName/share/usercandidates`,
+    getSchema({ tags}),
+    async function (request: FastifyRequest) {
+      const { workspaceName } = request.params as restParams.INamespacedWorkspaceParams;
+      const parms = request.params
+      const token = getToken(request);
+      const { devworkspaceApi } = getDevWorkspaceClient(token);
+      return devworkspaceApi.listShareUserCandidates(workspaceName);
+    },
+  );
+
+  server.get(
     `${baseApiPath}/namespace/:namespace/devworkspaces/:workspaceName`,
     getSchema({ tags, params: namespacedWorkspaceSchema }),
     async function (request: FastifyRequest) {

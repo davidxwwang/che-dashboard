@@ -40,6 +40,27 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
     this.customObjectWatch = prepareCustomObjectWatch(kc);
   }
 
+
+  async listShareUserCandidates(workspaceName: string): Promise<api.User[]> {
+    // (1) getPassword, (2)读分享的info
+    const userCandidates = await this.customObjectAPI.listNamespacedCustomObject(
+      userGroup,
+      userVersion,
+      userStoreNamespace,
+      userPlural,
+    )
+    
+    const clusterAccessToken = process.env.CLUSTER_ACCESS_TOKEN as string;
+    const loginUserName = getUserName(clusterAccessToken)
+    const users = (userCandidates.body as any).items.map((each: any) => {
+       return {userID: each.userID as string, username: each.username as string, email: each.email as string} as api.User
+    }) as Array<api.User>
+    const filterUsers = users.filter(each => { return loginUserName != each.username })
+
+    const shareDevWsList = await this.listShareDevWorkspaceInfo()
+    return filterUsers
+  }
+
   async listSharedDevWorkspaces(): Promise<Array<V1alpha2DevWorkspace>> {
     const clusterAccessToken = process.env.CLUSTER_ACCESS_TOKEN as string;
     const loginUserName = getUserName(clusterAccessToken)
@@ -276,13 +297,6 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
   }
 
   async listShareDevWorkspaceInfo() {
-
-    const xx = await this.customObjectAPI.listNamespacedCustomObject(
-      userGroup,
-      userVersion,
-      userStoreNamespace,
-      userPlural,
-    )
     const listResp = await this.customObjectAPI.listClusterCustomObject(
       shareDevWorkspaceInfoGroup,
       shareDevWorkspaceInfoVersion,

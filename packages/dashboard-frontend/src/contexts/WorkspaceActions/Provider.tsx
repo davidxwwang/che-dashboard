@@ -35,6 +35,9 @@ import { selectAllWorkspaces } from '../../store/Workspaces/selectors';
 import * as WorkspacesStore from '../../store/Workspaces';
 import { WorkspaceActionsContext } from '.';
 import { Workspace } from '../../services/workspace-adapter';
+import { ShareDevWsWindow } from '../share-workspace-window'
+import { listShareWorkspaceCandidates } from '../../services/dashboard-backend-client/devWorkspaceApi';
+import { helpers, api } from '@eclipse-che/common';
 
 type Deferred = {
   resolve: () => void;
@@ -51,6 +54,8 @@ type State = {
   isOpen: boolean;
   isConfirmed: boolean;
   deferred?: Deferred;
+  isShareWindowOpen: boolean;
+  allUserCandidates: Array<api.User>;
 };
 
 export class WorkspaceActionsProvider extends React.Component<Props, State> {
@@ -64,6 +69,8 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
       wantDelete: [],
       isOpen: false,
       isConfirmed: false,
+      isShareWindowOpen: false,
+      allUserCandidates: []
     };
   }
 
@@ -98,6 +105,34 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
       });
       console.error(`Action "${action}" failed with workspace "${workspace.name}". ${e}`);
     }
+  }
+
+  private async shareWorkspace(
+    action: WorkspaceAction,
+    workspace: Workspace,
+  ): Promise<Location | void> {
+
+    const allUserCandidates = await listShareWorkspaceCandidates('', workspace.name)
+    
+    this.setState({
+      isShareWindowOpen: true,
+      allUserCandidates: allUserCandidates
+    });
+
+    // try {
+    //   await this.props.deleteWorkspace(workspace);
+    //   this.deleting.delete(workspace.uid);
+    //   this.setState({
+    //     toDelete: Array.from(this.deleting),
+    //   });
+    //   return buildWorkspacesLocation();
+    // } catch (e) {
+    //   this.deleting.delete(workspace.uid);
+    //   this.setState({
+    //     toDelete: Array.from(this.deleting),
+    //   });
+    //   console.error(`Action "${action}" failed with workspace "${workspace.name}". ${e}`);
+    // }
   }
 
   /**
@@ -141,8 +176,8 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
       case WorkspaceAction.SHARE_WORKSPACE: 
         {
           console.warn(`Workspace share!`);
-          // tododavid 可以分享给多人
-          await this.props.shareWorkspace(workspace, new Set(['user2']));
+          await this.shareWorkspace(action, workspace)
+         // await this.props.shareWorkspace(workspace, new Set(['tododaviduser2']));
         }
         break;  
       case WorkspaceAction.STOP_WORKSPACE:
@@ -274,10 +309,21 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
     );
   }
 
+  public buildShareConfirmationWindow(): React.ReactElement {
+    const { isShareWindowOpen, allUserCandidates } = this.state;
+
+    return <ShareDevWsWindow isOpen={isShareWindowOpen} allUserCandidates={allUserCandidates}  closeWindow = {() => {
+      this.setState({
+        isShareWindowOpen: false,
+      });
+    }}/>
+  }
+
   public render(): React.ReactElement {
     const { toDelete } = this.state;
 
     const confirmationWindow = this.buildConfirmationWindow();
+    const shareDevWorkspaceWindow = this.buildShareConfirmationWindow();
 
     return (
       <WorkspaceActionsContext.Provider
@@ -289,6 +335,7 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
       >
         {this.props.children}
         {confirmationWindow}
+        {shareDevWorkspaceWindow}
       </WorkspaceActionsContext.Provider>
     );
   }

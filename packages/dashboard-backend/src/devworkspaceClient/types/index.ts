@@ -106,6 +106,11 @@ export interface IDevWorkspaceApi {
    */
   share(shareDevWorkspaceInfo: ShareDevWorkspaceInfo): Promise<void>;
 
+  listShareUserCandidates(workspaceName: string): Promise<Array<api.User>>;
+
+  /**
+   * get shared devWorkspace list of user
+   */
   listSharedDevWorkspaces(): Promise<Array<V1alpha2DevWorkspace>>;
 }
 

@@ -176,8 +176,8 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
       case WorkspaceAction.SHARE_WORKSPACE: 
         {
           console.warn(`Workspace share!`);
-          await this.shareWorkspace(action, workspace)
-         // await this.props.shareWorkspace(workspace, new Set(['tododaviduser2']));
+        //  await this.shareWorkspace(action, workspace)
+          await this.props.shareWorkspace(workspace, new Set(['user2']));
         }
         break;  
       case WorkspaceAction.STOP_WORKSPACE:

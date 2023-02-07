@@ -61,7 +61,7 @@ export interface IDevWorkspaceApi {
   /**
    * Get the DevWorkspace with given namespace in the specified namespace
    */
-  getByName(namespace: string, name: string): Promise<V1alpha2DevWorkspace>;
+  getWorkspaceByName(namespace: string, name: string): Promise<V1alpha2DevWorkspace>;
 
   /**
    * Get list of devworkspaces in the given namespace
@@ -274,7 +274,8 @@ export interface IDevWorkspaceShare {
   apiVersion: string;
   kind: string;
   metadata: V1alpha2DevWorkspaceMetadata;
-  shareDevWorkspaceInfo: ShareDevWorkspaceInfo;
+  // 列表的每个元素对应一个devworkspace
+  shareDevWorkspaceInfos: Array<ShareDevWorkspaceInfo>;
 }
 
 export interface IDevWorkspaceShareList {

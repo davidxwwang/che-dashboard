@@ -96,7 +96,7 @@ export function getDevWorkspaceClient(_args: Parameters<typeof helper>): ReturnT
     devworkspaceApi: {
       create: (_devworkspace, _namespace) => Promise.resolve(stubDevWorkspace),
       delete: (_namespace, _name) => Promise.resolve(undefined),
-      getByName: (_namespace, _name) => Promise.resolve(stubDevWorkspace),
+      getWorkspaceByName: (_namespace, _name) => Promise.resolve(stubDevWorkspace),
       listInNamespace: _namespace => Promise.resolve(stubDevWorkspacesList),
       patch: (_namespace, _name, _patches) => Promise.resolve(stubDevWorkspace),
     } as IDevWorkspaceApi,

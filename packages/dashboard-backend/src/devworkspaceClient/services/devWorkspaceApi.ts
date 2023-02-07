@@ -53,11 +53,24 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
     const clusterAccessToken = process.env.CLUSTER_ACCESS_TOKEN as string;
     const loginUserName = getUserName(clusterAccessToken)
     const users = (userCandidates.body as any).items.map((each: any) => {
-       return {userID: each.userID as string, username: each.username as string, email: each.email as string} as api.User
+       return {userID: each.userID as string, username: each.username as string, email: each.email as string, shared: false} as api.User
     }) as Array<api.User>
     const filterUsers = users.filter(each => { return loginUserName != each.username })
 
-    const shareDevWsList = await this.listShareDevWorkspaceInfo()
+    const shareDevWsList = await this.getLoginUserShareDevWorkspaceInfo()
+    if(shareDevWsList == undefined){
+      return filterUsers;
+    }
+    const workspaceShareInfo = shareDevWsList.shareDevWorkspaceInfos.find(item => workspaceName === item.devWorkspace)
+    const sharedUsers = workspaceShareInfo?.shared
+
+    if(sharedUsers){
+      const sharedUsernames = sharedUsers.map(each => {return each.sharedToUserName})
+      filterUsers.forEach(each => {
+        const shared = sharedUsernames.find(user => {return user === each.username})
+        each.shared = shared ? true : false;
+      })
+    }
     return filterUsers
   }
 
@@ -67,28 +80,37 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
     const shareDevWsList = await this.listShareDevWorkspaceInfo()
     const beSharedDevWs = new Array<V1alpha2DevWorkspace>();
     for(const eachShareItem of shareDevWsList){
-      const beSharedUsers = eachShareItem.shareDevWorkspaceInfo.shared;
-      const beSharedItem =  beSharedUsers.find((eachBeSharedUser) => {return eachBeSharedUser.sharedToUserName === loginUserName;});
-      const isLoginUserBeShared = beSharedItem != undefined
-      if(isLoginUserBeShared){
-        // 此时说明有分享给他的了
-        const shareDevWsUser = eachShareItem.shareDevWorkspaceInfo.sharer;
-        const shareDevWorkspaceName = eachShareItem.shareDevWorkspaceInfo.devWorkspace;
-        const shareDevWsNameSpace = eachShareItem.shareDevWorkspaceInfo.namespace;
+      // 每一个workspace分享的数据
+      const eachworkspaceShareInfoList = eachShareItem.shareDevWorkspaceInfos
+      for(const eachworkspaceShare of eachworkspaceShareInfoList){
+        // 对于每一个分享的workspace
+        const beSharedUsers = eachworkspaceShare.shared;
+        const beSharedItem =  beSharedUsers.find((eachBeSharedUser) => {return eachBeSharedUser.sharedToUserName === loginUserName;});
+        const isLoginUserBeShared = beSharedItem != undefined
+        if(isLoginUserBeShared){
+          // 此时说明有workspace分享给他了
+          const shareDevWorkspaceName = eachworkspaceShare.devWorkspace;
+          const shareDevWsNameSpace = eachworkspaceShare.namespace;
 
-        // todo 有可能此时devworkspace被删除了
-        const devWorkspace = await this.getByName(shareDevWsNameSpace, shareDevWorkspaceName)
-        beSharedDevWs.push(devWorkspace)
+          // todo 有可能此时devworkspace被删除了
+          const devWorkspace = await this.getWorkspaceByName(shareDevWsNameSpace, shareDevWorkspaceName)
+          beSharedDevWs.push(devWorkspace)
+        }
       }
     }
     return beSharedDevWs;
   }
 
+  /**
+   * todo 自己不能分享给自己
+   * 被分享的workspace不能再次分享
+   * @param shareDevWorkspaceInfo 
+   */
   async share(shareDevWorkspaceInfo: ShareDevWorkspaceInfo): Promise<void> {
     
     try {
       // 1 create or update shareDevWorkspaceInfoConfig
-      this.upsertShareDevWorkSpaceInfo(shareDevWorkspaceInfo);
+      this.upsertShareDevWorkSpaceInfo2(shareDevWorkspaceInfo);
       // 2 update rolebinding in user namespaace
       this.updataRoleBinding(shareDevWorkspaceInfo)
 
@@ -115,7 +137,7 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
     }
   }
 
-  async getByName(namespace: string, name: string): Promise<V1alpha2DevWorkspace> {
+  async getWorkspaceByName(namespace: string, name: string): Promise<V1alpha2DevWorkspace> {
     try {
       const resp = await this.customObjectAPI.getNamespacedCustomObject(
         devworkspaceGroup,
@@ -305,15 +327,65 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
     return (listResp.body as IDevWorkspaceShareList).items;  
   }
 
+  /**
+   * 当前登录用户的分享信息
+   * @returns 
+   */
+  async getLoginUserShareDevWorkspaceInfo() {
+    // todo 用户校验
+    const clusterAccessToken = process.env.CLUSTER_ACCESS_TOKEN as string;
+    const loginUserName = getUserName(clusterAccessToken)
+    try{
+      const listResp = await this.customObjectAPI.getClusterCustomObject(
+        shareDevWorkspaceInfoGroup,
+        shareDevWorkspaceInfoVersion,
+        shareDevWorkspaceInfoPlural,
+        this.getUserShareWorkspaceResourceKeyName(loginUserName)
+      );  
+      const resp = listResp.body as any
+      return 'Failure' === resp.status ? undefined :(listResp.body as IDevWorkspaceShare);
+    }catch(e){
+      return undefined
+    }     
+  }
+
    /**
    * save the devWorkSpace share info：who share which devWorkspace to who（is a clusterd cr）
-   * @param shareDevWorkspaceInfo 
+   * @param shareDevWorkspaceInfo
+   * 每个用户一个 
    */
-   async upsertShareDevWorkSpaceInfo(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
-    const listResp = await this.listShareDevWorkspaceInfo()
-    const loginUserShareInfo = this.getloginUserShareDevWsInfo(listResp, shareDevWorkspaceInfo);
-    const shareDevWorkspaceDto = this.constructShareDevWorkspace(shareDevWorkspaceInfo, loginUserShareInfo)
-    const userNotShareAny = loginUserShareInfo == undefined
+  //  async upsertShareDevWorkSpaceInfo(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
+  //   const listResp = await this.listShareDevWorkspaceInfo()
+  //   const loginUserShareInfo = this.getloginUserShareDevWsInfo(listResp, shareDevWorkspaceInfo);
+  //   const shareDevWorkspaceDto = this.constructShareDevWorkspace(shareDevWorkspaceInfo, loginUserShareInfo)
+  //   const userNotShareAny = loginUserShareInfo == undefined
+  //   if(userNotShareAny){
+  //     await this.customObjectAPI.createClusterCustomObject(
+  //       shareDevWorkspaceInfoGroup,
+  //       shareDevWorkspaceInfoVersion,
+  //       shareDevWorkspaceInfoPlural,
+  //       shareDevWorkspaceDto,
+  //     );
+  //   }else{
+  //     if(loginUserShareInfo.metadata?.name){
+  //       const y = await this.customObjectAPI.replaceClusterCustomObject(
+  //         shareDevWorkspaceInfoGroup,
+  //         shareDevWorkspaceInfoVersion,
+  //         shareDevWorkspaceInfoPlural,
+  //         loginUserShareInfo.metadata?.name,
+  //         shareDevWorkspaceDto
+  //       );
+  //       console.log('%c [ await ]-73', 'font-size:13px; background:pink; color:#bf2c9f;', y)
+  //     }        
+  //   }
+  // }
+
+  async upsertShareDevWorkSpaceInfo2(shareDevWorkspaceInfo: ShareDevWorkspaceInfo){
+
+    // 登录用户(分享者)的分享信息
+    const userShareWorkspaceInfo = await this.getLoginUserShareDevWorkspaceInfo()
+    const shareDevWorkspaceDto = this.constructShareDevWorkspace(shareDevWorkspaceInfo, userShareWorkspaceInfo)
+    const userNotShareAny = userShareWorkspaceInfo == undefined
     if(userNotShareAny){
       await this.customObjectAPI.createClusterCustomObject(
         shareDevWorkspaceInfoGroup,
@@ -322,12 +394,12 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
         shareDevWorkspaceDto,
       );
     }else{
-      if(loginUserShareInfo.metadata?.name){
+      if(userShareWorkspaceInfo.metadata?.name){
         const y = await this.customObjectAPI.replaceClusterCustomObject(
           shareDevWorkspaceInfoGroup,
           shareDevWorkspaceInfoVersion,
           shareDevWorkspaceInfoPlural,
-          loginUserShareInfo.metadata?.name,
+          userShareWorkspaceInfo.metadata?.name,
           shareDevWorkspaceDto
         );
         console.log('%c [ await ]-73', 'font-size:13px; background:pink; color:#bf2c9f;', y)
@@ -348,25 +420,52 @@ export class DevWorkspaceApiService implements IDevWorkspaceApi {
   } 
 
   /**
-   * 用户和namespace是一对一关系
+   * 获取用户分享的workspace数据，用户和namespace是一对一关系
    * @param devShareList 
    * @param shareDevWorkspaceInfo 
    * @returns 如果是undefine就说明此用户没有分享过workspace
    */
-  getloginUserShareDevWsInfo(devShareList: IDevWorkspaceShare[], shareDevWorkspaceInfo: ShareDevWorkspaceInfo): IDevWorkspaceShare | undefined{
-    const loginUserShareInfo = devShareList.filter((item) => {return shareDevWorkspaceInfo.sharer === item.shareDevWorkspaceInfo.sharer});
-    return loginUserShareInfo.length > 0 ? loginUserShareInfo[0] : undefined;
-  }
+  // getloginUserShareDevWsInfo(devShareList: IDevWorkspaceShare[], shareDevWorkspaceInfo: ShareDevWorkspaceInfo): IDevWorkspaceShare | undefined{
+  //   const loginUserShareInfo = devShareList.filter((item) => {return shareDevWorkspaceInfo.sharer === item.shareDevWorkspaceInfo.sharer});
+  //   return loginUserShareInfo.length > 0 ? loginUserShareInfo[0] : undefined;
+  // }
 
-  constructShareDevWorkspace(shareDevWorkspaceInfo: ShareDevWorkspaceInfo, currentShareInfo: IDevWorkspaceShare | undefined): IDevWorkspaceShare{
-    const shareName = shareDevWorkspaceInfo.sharer + '-share';
-    const isCreateShare = currentShareInfo === undefined;
+  constructShareDevWorkspace(newShareDevWorkspaceInfo: ShareDevWorkspaceInfo, currentShareInfo: IDevWorkspaceShare | undefined): IDevWorkspaceShare{
+    const shareName = this.getUserShareWorkspaceResourceKeyName(newShareDevWorkspaceInfo.sharer);
+    const isCreateShare = currentShareInfo === undefined || currentShareInfo.shareDevWorkspaceInfos.length == 0;
+
+    const mergedWorkspaceList = this.mergeShareDevWorkspaceInfoList(newShareDevWorkspaceInfo, currentShareInfo)
+
     const shareDevMetadata = isCreateShare ? { name: shareName } : { name: shareName, resourceVersion: currentShareInfo.metadata.resourceVersion }
     const shareDevWorkspace = { apiVersion: shareDevWorkspaceInfoFullVersion, 
                                 metadata: shareDevMetadata, 
-                                kind: shareDevWorkspaceInfoKind, 
-                                shareDevWorkspaceInfo
+                                kind: shareDevWorkspaceInfoKind,
+                                shareDevWorkspaceInfos: mergedWorkspaceList                               
                               } as IDevWorkspaceShare;
     return shareDevWorkspace;
+  }
+
+  private mergeShareDevWorkspaceInfoList(newShareDevWorkspaceInfo: ShareDevWorkspaceInfo, currentShareWorkspaceInfoList: IDevWorkspaceShare | undefined): Array<ShareDevWorkspaceInfo>{
+    if(currentShareWorkspaceInfoList === undefined){
+      return [newShareDevWorkspaceInfo]
+    }
+
+    // 用户可能分享了多个workspace
+    const userOldShareWorkspaceList = currentShareWorkspaceInfoList.shareDevWorkspaceInfos;
+    const isCreateShare = currentShareWorkspaceInfoList === undefined || userOldShareWorkspaceList === undefined || userOldShareWorkspaceList.length == 0;
+    if(isCreateShare){
+      return [newShareDevWorkspaceInfo]
+    }else{
+      const a = userOldShareWorkspaceList.filter(each => {
+        each.devWorkspace != newShareDevWorkspaceInfo.devWorkspace
+      });
+
+      a.push(newShareDevWorkspaceInfo)
+      return a
+    }
+  }
+
+  private getUserShareWorkspaceResourceKeyName(username: string){
+    return username + '-share';
   }
 }

@@ -101,7 +101,7 @@ export function registerDevworkspacesRoutes(server: FastifyInstance) {
       const { namespace, workspaceName } = request.params as restParams.INamespacedWorkspaceParams;
       const token = getToken(request);
       const { devworkspaceApi } = getDevWorkspaceClient(token);
-      return devworkspaceApi.getByName(namespace, workspaceName);
+      return devworkspaceApi.getWorkspaceByName(namespace, workspaceName);
     },
   );
 

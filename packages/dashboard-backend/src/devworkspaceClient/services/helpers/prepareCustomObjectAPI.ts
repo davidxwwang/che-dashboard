@@ -24,6 +24,7 @@ export type CustomObjectAPI = Pick<
   | 'patchNamespacedCustomObject'
   | 'createClusterCustomObject'
   | 'replaceClusterCustomObject'
+  | 'getClusterCustomObject'
   
 >;
 
@@ -57,5 +58,8 @@ export function prepareCustomObjectAPI(kc: k8s.KubeConfig): CustomObjectAPI {
     replaceClusterCustomObject: (
       ...args: Parameters<typeof customObjectAPI.replaceClusterCustomObject>
     ) => retryableExec(() => customObjectAPI.replaceClusterCustomObject(...args)),
+    getClusterCustomObject: (
+      ...args: Parameters<typeof customObjectAPI.getClusterCustomObject>
+    ) => retryableExec(() => customObjectAPI.getClusterCustomObject(...args)),
   };
 }

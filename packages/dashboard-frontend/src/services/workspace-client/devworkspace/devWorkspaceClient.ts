@@ -746,7 +746,7 @@ export class DevWorkspaceClient extends WorkspaceClient {
     await DwApi.deleteWorkspace(namespace, name);
   }
 
-  async shareWorkspace(namespace: string, name: string, beSharedUsers: Set<string>): Promise<void> {
+  async shareWorkspace(namespace: string, name: string, beSharedUsers: Set<api.User>): Promise<void> {
     await DwApi.shareWorkspace(namespace, name, beSharedUsers);
   }
   

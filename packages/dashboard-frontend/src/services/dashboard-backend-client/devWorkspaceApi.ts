@@ -86,11 +86,11 @@ export async function deleteWorkspace(namespace: string, workspaceName: string):
 export async function shareWorkspace(
   namespace: string, 
   workspaceName: string, 
-  beSharedUsers: Set<string>
+  beSharedUsers: Set<api.User>
 ): Promise<void> {
   try {
     const _beSharedUsers = Array.from(beSharedUsers).map((user)=> {
-      return {beSharedUser: user}
+      return {beSharedUser: user.username}
     }) as api.IDevShare[]
     await axios.post(`${prefix}/namespace/${namespace}/devworkspaces/${workspaceName}/share`, _beSharedUsers);
   } catch (e) {

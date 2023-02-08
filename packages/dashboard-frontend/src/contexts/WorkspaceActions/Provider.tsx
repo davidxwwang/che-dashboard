@@ -54,6 +54,7 @@ type State = {
   isOpen: boolean;
   isConfirmed: boolean;
   deferred?: Deferred;
+  toShareWorkspace: Workspace | undefined;
   isShareWindowOpen: boolean;
   allUserCandidates: Array<api.User>;
 };
@@ -69,6 +70,7 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
       wantDelete: [],
       isOpen: false,
       isConfirmed: false,
+      toShareWorkspace: undefined,
       isShareWindowOpen: false,
       allUserCandidates: []
     };
@@ -111,28 +113,12 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
     action: WorkspaceAction,
     workspace: Workspace,
   ): Promise<Location | void> {
-
     const allUserCandidates = await listShareWorkspaceCandidates('', workspace.name)
-    
     this.setState({
+      toShareWorkspace: workspace,
       isShareWindowOpen: true,
       allUserCandidates: allUserCandidates
     });
-
-    // try {
-    //   await this.props.deleteWorkspace(workspace);
-    //   this.deleting.delete(workspace.uid);
-    //   this.setState({
-    //     toDelete: Array.from(this.deleting),
-    //   });
-    //   return buildWorkspacesLocation();
-    // } catch (e) {
-    //   this.deleting.delete(workspace.uid);
-    //   this.setState({
-    //     toDelete: Array.from(this.deleting),
-    //   });
-    //   console.error(`Action "${action}" failed with workspace "${workspace.name}". ${e}`);
-    // }
   }
 
   /**
@@ -175,9 +161,7 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
         break;
       case WorkspaceAction.SHARE_WORKSPACE: 
         {
-          console.warn(`Workspace share!`);
-        //  await this.shareWorkspace(action, workspace)
-          await this.props.shareWorkspace(workspace, new Set(['user2']));
+          await this.shareWorkspace(action, workspace)
         }
         break;  
       case WorkspaceAction.STOP_WORKSPACE:
@@ -310,13 +294,18 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
   }
 
   public buildShareConfirmationWindow(): React.ReactElement {
-    const { isShareWindowOpen, allUserCandidates } = this.state;
-
-    return <ShareDevWsWindow isOpen={isShareWindowOpen} allUserCandidates={allUserCandidates}  closeWindow = {() => {
-      this.setState({
-        isShareWindowOpen: false,
-      });
-    }}/>
+    const { isShareWindowOpen, allUserCandidates, toShareWorkspace } = this.state;
+    return <ShareDevWsWindow  isOpen={isShareWindowOpen} 
+                              allUserCandidates={allUserCandidates} 
+                              closeWindow = {() => {
+                                this.setState({ isShareWindowOpen: false, toShareWorkspace: undefined});
+                              }}
+                              shareWorkspaceToUser = {(shareUsers: Array<api.User>) => {
+                                if(toShareWorkspace){
+                                  this.props.shareWorkspace(toShareWorkspace, new Set(shareUsers));
+                                }                                                    
+                              }}
+            />
   }
 
   public render(): React.ReactElement {
@@ -334,8 +323,9 @@ export class WorkspaceActionsProvider extends React.Component<Props, State> {
         }}
       >
         {this.props.children}
-        {confirmationWindow}
         {shareDevWorkspaceWindow}
+        {confirmationWindow}
+        
       </WorkspaceActionsContext.Provider>
     );
   }

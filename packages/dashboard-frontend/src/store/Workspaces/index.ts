@@ -18,6 +18,7 @@ import { Workspace } from '../../services/workspace-adapter';
 import * as DevWorkspacesStore from './devWorkspaces';
 import common from '@eclipse-che/common';
 import OAuthService, { isOAuthResponse } from '../../services/oauth';
+import {api} from '@eclipse-che/common'
 
 // This state defines the type of data maintained in the Redux store.
 export interface State {
@@ -105,7 +106,7 @@ export type ActionCreators = {
   ) => AppThunk<KnownAction, Promise<void>>;
   restartWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
   stopWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
-  shareWorkspace: (workspace: Workspace, beSharedUsers: Set<string>) => AppThunk<KnownAction, Promise<void>>;
+  shareWorkspace: (workspace: Workspace, beSharedUsers: Set<api.User>) => AppThunk<KnownAction, Promise<void>>;
   deleteWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
   updateWorkspace: (workspace: Workspace) => AppThunk<KnownAction, Promise<void>>;
   createWorkspaceFromDevfile: (
@@ -211,7 +212,7 @@ export const actionCreators: ActionCreators = {
     },
   
   shareWorkspace:
-    (workspace: Workspace, beSharedUsers: Set<string>): AppThunk<KnownAction, Promise<void>> =>
+    (workspace: Workspace, beSharedUsers: Set<api.User>): AppThunk<KnownAction, Promise<void>> =>
     async (dispatch): Promise<void> => {
       try {
         await dispatch(

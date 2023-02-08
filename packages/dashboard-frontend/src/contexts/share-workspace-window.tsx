@@ -29,6 +29,7 @@ interface ShareDevWsWindowProps{
     isOpen: boolean;
     allUserCandidates: Array<api.User>;
     closeWindow: () => void;
+    shareWorkspaceToUser: (shareUser: Array<api.User>) => void;
 }
 
 const getSharedUserIds = (allCandis: Array<api.User>): Array<string> =>{
@@ -36,29 +37,32 @@ const getSharedUserIds = (allCandis: Array<api.User>): Array<string> =>{
     return a.map(each => each.userID)   
 }
 
-export const ShareDevWsWindow: React.FunctionComponent<ShareDevWsWindowProps> = ({isOpen, allUserCandidates, closeWindow}) => {
+export const ShareDevWsWindow: React.FunctionComponent<ShareDevWsWindowProps> = ({isOpen, allUserCandidates, closeWindow, shareWorkspaceToUser}) => {
 
-    // todo 得到所有候选者 http
-    const allCandidates = ['user2']
     // 选中的分享的人列表,只包括itemId
     const [selectUsers, setSelectUsers] = useState<string[]>(getSharedUserIds(allUserCandidates))
 
+   // const selectedUsernameList: Array<string> = getSharedUserIds(allUserCandidates);
+
     const handleWindowToggle = () => {
         closeWindow();
-       // setIsModelOpen(open => !open)
     }
 
-    const doShareDevWsWindow = () => {
+    const doShareDevWorkspace = () => {
         // todo 
+        console.log('do share')
+        const selectedCandis = allUserCandidates.filter(each => { return selectUsers.includes(each.username) })
+        shareWorkspaceToUser(selectedCandis)
+        closeWindow();
     }
 
     // 选中的响应方法
-    const onSelectUser = (event: React.MouseEvent<Element, MouseEvent> | undefined, userId: string | number | undefined) => {
-        const _userId = userId as string
-        if(selectUsers.includes(_userId)){
-            setSelectUsers(selectUsers.filter(id => id != _userId))
+    const onSelectUser = (event: React.MouseEvent<Element, MouseEvent> | undefined, username: string | number | undefined) => {
+        const _username = username as string
+        if(selectUsers.includes(_username)){
+            setSelectUsers(selectUsers.filter(id => id != _username))
         }else{
-            setSelectUsers([...selectUsers, _userId])
+            setSelectUsers([...selectUsers, _username])
         }
     }
     
@@ -67,16 +71,11 @@ export const ShareDevWsWindow: React.FunctionComponent<ShareDevWsWindowProps> = 
             <MenuContent>
                 <MenuList>                
                     {
-                        allCandidates.map(candi => {
-                            return (<MenuItem key={candi} itemId={candi} isSelected={selectUsers.includes(candi)}>
-                                {candi}
+                        allUserCandidates.map(candi => {
+                            return (<MenuItem key={candi.userID} itemId={candi.username} isSelected={selectUsers.includes(candi.userID)}>
+                                {candi.username}
                             </MenuItem>)
                         })
-                        // allUserCandidates.map(candi => {
-                        //     return (<MenuItem key={candi.userID} itemId={candi.userID} isSelected={selectUsers.includes(candi.userID)}>
-                        //         {candi.userName}
-                        //     </MenuItem>)
-                        //})
                     }
                 </MenuList>
             </MenuContent>
@@ -89,7 +88,7 @@ export const ShareDevWsWindow: React.FunctionComponent<ShareDevWsWindowProps> = 
         variant={ButtonVariant.danger}
         isDisabled={false}
         data-testid="delete-workspace-button"
-        onClick={() => doShareDevWsWindow()}
+        onClick={() => doShareDevWorkspace()}
         >
         Share
         </Button>
@@ -106,10 +105,11 @@ export const ShareDevWsWindow: React.FunctionComponent<ShareDevWsWindowProps> = 
     return (
     <Modal
         title="Share Workspace"
+        titleIconVariant="warning"
         variant={ModalVariant.small}
         isOpen={isOpen}
         onClose={() => {handleWindowToggle()}}
-    // aria-label="Delete workspaces confirmation window"
+        aria-label="Delete workspaces confirmation window"
         footer={footer}
     >
         {body}

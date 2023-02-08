@@ -43,6 +43,7 @@ import * as DwServerConfigStore from '../../ServerConfig';
 import { selectOpenVSXUrl } from '../../ServerConfig/selectors';
 import { deleteLogs, mergeLogs } from '../logs';
 import { selectRunningDevWorkspacesLimitExceeded } from './selectors';
+import { api }from '@eclipse-che/common'
 
 const devWorkspaceClient = container.get(DevWorkspaceClient);
 
@@ -149,7 +150,7 @@ export type ActionCreators = {
   stopWorkspace: (workspace: devfileApi.DevWorkspace) => AppThunk<KnownAction, Promise<void>>;
   shareWorkspace: (
     workspace: devfileApi.DevWorkspace, 
-    beSharedUsers: Set<string>
+    beSharedUsers: Set<api.User>
   ) => AppThunk<KnownAction, Promise<void>>;
   terminateWorkspace: (workspace: devfileApi.DevWorkspace) => AppThunk<KnownAction, Promise<void>>;
   updateWorkspaceAnnotation: (
@@ -441,7 +442,7 @@ export const actionCreators: ActionCreators = {
     },
   
   shareWorkspace:
-  (workspace: devfileApi.DevWorkspace, beSharedUsers: Set<string>): AppThunk<KnownAction, Promise<void>> =>
+  (workspace: devfileApi.DevWorkspace, beSharedUsers: Set<api.User>): AppThunk<KnownAction, Promise<void>> =>
     async (dispatch): Promise<void> => {
       try {
         const namespace = workspace.metadata.namespace;
